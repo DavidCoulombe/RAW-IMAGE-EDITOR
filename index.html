@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LumiraRAW Studio - Pro RAW Image Processing & Darkroom</title>
+  <meta name="description" content="Professional browser-based RAW photo editor with 16-bit float pipeline, Bayer demosaicing, SVG tone curves, HSL color tuning, split toning, and real-time RGB histogram.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-theme">
+  <div id="app" class="app-container">
+    
+    <!-- Top Header Toolbar -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="logo-badge">
+          <i data-lucide="aperture" class="brand-icon"></i>
+        </div>
+        <div class="brand-title">
+          <h1>Lumira<span>RAW</span></h1>
+          <span class="version-tag">PRO v2.5</span>
+        </div>
+      </div>
+
+      <div class="header-center-tools">
+        <label class="btn btn-secondary file-upload-btn" title="Open RAW file (.DNG, .CR2, .NEF, .ARW, .TIFF, .JPG)">
+          <i data-lucide="folder-open"></i>
+          <span>Open File</span>
+          <input type="file" id="file-input" accept=".dng,.cr2,.nef,.arw,.rw2,.orf,.pef,.raf,.tif,.tiff,.jpg,.jpeg,.png,.webp" hidden>
+        </label>
+        
+        <div class="dropdown-container">
+          <button id="sample-picker-btn" class="btn btn-secondary">
+            <i data-lucide="image"></i>
+            <span>Sample RAWs</span>
+            <i data-lucide="chevron-down" class="icon-sm"></i>
+          </button>
+          <div id="sample-menu" class="dropdown-menu hidden">
+            <div class="dropdown-item" data-sample="landscape">
+              <i data-lucide="mountain"></i>
+              <div>
+                <div class="dropdown-label">Landscape_Sunset.DNG</div>
+                <div class="dropdown-sub">Canon EOS R5 • ISO 100 • 24mm f/8</div>
+              </div>
+            </div>
+            <div class="dropdown-item" data-sample="portrait">
+              <i data-lucide="user"></i>
+              <div>
+                <div class="dropdown-label">Portrait_GoldenHour.NEF</div>
+                <div class="dropdown-sub">Nikon Z7 II • ISO 64 • 85mm f/1.4</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider-vertical"></div>
+
+        <div class="view-mode-group">
+          <button id="btn-single-view" class="btn-icon active" title="Single View">
+            <i data-lucide="square"></i>
+          </button>
+          <button id="btn-split-view" class="btn-icon" title="Split Before/After Comparison">
+            <i data-lucide="columns-2"></i>
+          </button>
+          <button id="btn-toggle-before" class="btn-icon" title="Hold/Toggle Original RAW (Spacebar)">
+            <i data-lucide="eye"></i>
+          </button>
+        </div>
+
+        <div class="divider-vertical"></div>
+
+        <div class="canvas-action-group">
+          <button id="btn-crop" class="btn-icon" title="Crop & Rotate Tool">
+            <i data-lucide="crop"></i>
+          </button>
+          <button id="btn-pipette" class="btn-icon" title="White Balance Picker Tool">
+            <i data-lucide="pipette"></i>
+          </button>
+          <button id="btn-bayer-inspect" class="btn-icon" title="Inspect Bayer Matrix Demosaic">
+            <i data-lucide="grid-3x3"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="header-right-tools">
+        <button id="btn-undo" class="btn-icon" title="Undo (Cmd+Z)" disabled>
+          <i data-lucide="undo-2"></i>
+        </button>
+        <button id="btn-redo" class="btn-icon" title="Redo (Cmd+Y)" disabled>
+          <i data-lucide="redo-2"></i>
+        </button>
+        <button id="btn-reset-all" class="btn btn-ghost" title="Reset All Adjustments">
+          <i data-lucide="rotate-ccw"></i>
+          <span>Reset</span>
+        </button>
+
+        <div class="divider-vertical"></div>
+
+        <button id="btn-export-modal" class="btn btn-primary">
+          <i data-lucide="download"></i>
+          <span>Export RAW</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="workspace-main">
+      
+      <!-- Left Sidebar: Library, Presets & EXIF -->
+      <aside class="sidebar sidebar-left">
+        
+        <!-- Sidebar Navigation Tabs -->
+        <div class="sidebar-tabs">
+          <button class="tab-btn active" data-tab="tab-presets">
+            <i data-lucide="sliders"></i>
+            <span>Presets</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-exif">
+            <i data-lucide="info"></i>
+            <span>EXIF</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-snapshots">
+            <i data-lucide="history"></i>
+            <span>History</span>
+          </button>
+        </div>
+
+        <div class="sidebar-content">
+          
+          <!-- Presets Tab -->
+          <div id="tab-presets" class="tab-panel active">
+            <div class="panel-section">
+              <div class="section-title">Film Emulations</div>
+              <div class="presets-grid">
+                <button class="preset-card active" data-preset="default">
+                  <div class="preset-name">As Shot (RAW)</div>
+                  <div class="preset-tag">Neutral</div>
+                </button>
+                <button class="preset-card" data-preset="portra400">
+                  <div class="preset-name">Portra 400</div>
+                  <div class="preset-tag">Warm Film</div>
+                </button>
+                <button class="preset-card" data-preset="velvia50">
+                  <div class="preset-name">Fuji Velvia</div>
+                  <div class="preset-tag">Vibrant Landscape</div>
+                </button>
+                <button class="preset-card" data-preset="tri-x">
+                  <div class="preset-name">Tri-X 400 B&W</div>
+                  <div class="preset-tag">Mono Grain</div>
+                </button>
+                <button class="preset-card" data-preset="teal-orange">
+                  <div class="preset-name">Teal & Orange</div>
+                  <div class="preset-tag">Cinematic</div>
+                </button>
+                <button class="preset-card" data-preset="moody-forest">
+                  <div class="preset-name">Moody Forest</div>
+                  <div class="preset-tag">Deep Shadows</div>
+                </button>
+                <button class="preset-card" data-preset="hdr-dramatic">
+                  <div class="preset-name">HDR Ultra</div>
+                  <div class="preset-tag">High Contrast</div>
+                </button>
+                <button class="preset-card" data-preset="vintage-gold">
+                  <div class="preset-name">Kodachrome 64</div>
+                  <div class="preset-tag">Retro Warm</div>
+                </button>
+              </div>
+            </div>
+
+            <div class="panel-section">
+              <div class="section-header">
+                <span class="section-title">Sidecar Presets</span>
+              </div>
+              <div class="sidecar-actions">
+                <button id="btn-export-xmp" class="btn btn-secondary btn-full">
+                  <i data-lucide="file-json"></i> Export Preset (.JSON)
+                </button>
+                <label class="btn btn-secondary btn-full">
+                  <i data-lucide="upload"></i> Import Preset
+                  <input type="file" id="preset-import-input" accept=".json" hidden>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXIF Tab -->
+          <div id="tab-exif" class="tab-panel">
+            <div class="panel-section">
+              <div class="section-title">Camera Metadata</div>
+              <div class="exif-list">
+                <div class="exif-item"><span class="exif-key">Camera Model:</span><span id="exif-camera" class="exif-val">Canon EOS R5</span></div>
+                <div class="exif-item"><span class="exif-key">Lens:</span><span id="exif-lens" class="exif-val">RF 24-70mm F2.8 L IS USM</span></div>
+                <div class="exif-item"><span class="exif-key">ISO:</span><span id="exif-iso" class="exif-val">100</span></div>
+                <div class="exif-item"><span class="exif-key">Shutter Speed:</span><span id="exif-shutter" class="exif-val">1/250s</span></div>
+                <div class="exif-item"><span class="exif-key">Aperture:</span><span id="exif-aperture" class="exif-val">f/8.0</span></div>
+                <div class="exif-item"><span class="exif-key">Focal Length:</span><span id="exif-focal" class="exif-val">35mm</span></div>
+                <div class="exif-item"><span class="exif-key">Resolution:</span><span id="exif-dimensions" class="exif-val">8192 × 5464 (45 MP)</span></div>
+                <div class="exif-item"><span class="exif-key">Color Depth:</span><span id="exif-depth" class="exif-val">14-bit RAW (Floating Point)</span></div>
+                <div class="exif-item"><span class="exif-key">Bayer Pattern:</span><span id="exif-bayer" class="exif-val">RGGB Matrix</span></div>
+                <div class="exif-item"><span class="exif-key">White Balance:</span><span id="exif-wb-mode" class="exif-val">Daylight (5500K)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- History Tab -->
+          <div id="tab-snapshots" class="tab-panel">
+            <div class="panel-section">
+              <div class="section-header">
+                <span class="section-title">Edit History Stack</span>
+                <button id="btn-clear-history" class="btn-sm btn-ghost">Clear</button>
+              </div>
+              <ul id="history-list" class="history-list">
+                <li class="history-item active">Original RAW Imported</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Center Viewport / Canvas Container -->
+      <section class="viewport-container" id="viewport-container">
+        
+        <!-- Top Floating Overlay Info -->
+        <div class="viewport-overlay-top">
+          <div class="file-name-tag" id="active-filename">Landscape_Sunset.DNG</div>
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span id="status-text">16-bit Float Accelerated</span>
+          </div>
+        </div>
+
+        <!-- Main Image Canvas -->
+        <div class="canvas-wrapper" id="canvas-wrapper">
+          <canvas id="main-canvas"></canvas>
+          <canvas id="bayer-canvas" class="hidden-bayer"></canvas>
+          
+          <!-- Split screen bar overlay (Visible in split mode) -->
+          <div id="split-divider" class="split-divider hidden">
+            <div class="split-handle"><i data-lucide="chevrons-left-right"></i></div>
+          </div>
+
+          <!-- Crop Grid Overlay -->
+          <div id="crop-overlay" class="crop-overlay hidden">
+            <div class="crop-box">
+              <div class="crop-grid-line h1"></div>
+              <div class="crop-grid-line h2"></div>
+              <div class="crop-grid-line v1"></div>
+              <div class="crop-grid-line v2"></div>
+            </div>
+          </div>
+
+          <!-- Eyedropper indicator -->
+          <div id="pipette-indicator" class="pipette-indicator hidden">
+            <div class="pipette-circle"></div>
+            <div class="pipette-text" id="pipette-color-val">5500K</div>
+          </div>
+        </div>
+
+        <!-- Bottom Canvas Controls Bar -->
+        <div class="viewport-overlay-bottom">
+          <div class="zoom-controls">
+            <button id="btn-zoom-out" class="btn-icon-sm" title="Zoom Out"><i data-lucide="minus"></i></button>
+            <span id="zoom-level-text">Fit</span>
+            <button id="btn-zoom-in" class="btn-icon-sm" title="Zoom In"><i data-lucide="plus"></i></button>
+            <button id="btn-zoom-fit" class="btn-sm btn-ghost">Fit</button>
+            <button id="btn-zoom-100" class="btn-sm btn-ghost">1:1</button>
+          </div>
+
+          <div class="clipping-warnings">
+            <button id="btn-shadow-clip" class="btn-toggle-chip" title="Toggle Shadow Clipping Overlay (Blue)">
+              <span class="chip-color shadow"></span> Shadow Clip
+            </button>
+            <button id="btn-highlight-clip" class="btn-toggle-chip" title="Toggle Highlight Clipping Overlay (Red)">
+              <span class="chip-color highlight"></span> Highlight Clip
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar: Histogram & Adjustment Panels -->
+      <aside class="sidebar sidebar-right">
+        
+        <!-- Live Histogram Box -->
+        <div class="histogram-card">
+          <div class="histogram-header">
+            <span class="histogram-title">RGB Histogram</span>
+            <div class="channel-indicators">
+              <span class="channel-dot r">R</span>
+              <span class="channel-dot g">G</span>
+              <span class="channel-dot b">B</span>
+              <span class="channel-dot l">L</span>
+            </div>
+          </div>
+          <canvas id="histogram-canvas" width="280" height="90"></canvas>
+        </div>
+
+        <!-- Adjustment Accordion Panels -->
+        <div class="accordion-container">
+          
+          <!-- Panel 1: Basic Tone & Color -->
+          <div class="accordion-group expanded" data-group="basic">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="sun"></i>
+                <span>Basic Exposure & Color</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              
+              <!-- WB Presets -->
+              <div class="control-row">
+                <label>White Balance</label>
+                <select id="wb-preset-select" class="select-input">
+                  <option value="custom">As Shot</option>
+                  <option value="daylight">Daylight (5500K)</option>
+                  <option value="cloudy">Cloudy (6500K)</option>
+                  <option value="shade">Shade (7500K)</option>
+                  <option value="tungsten">Tungsten (2800K)</option>
+                  <option value="fluorescent">Fluorescent (4000K)</option>
+                </select>
+              </div>
+
+              <!-- Temperature -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Temp</span>
+                  <span id="val-temp" class="slider-val">5500 K</span>
+                </div>
+                <input type="range" id="slider-temp" min="2000" max="12000" step="50" value="5500" class="gradient-temp">
+              </div>
+
+              <!-- Tint -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Tint</span>
+                  <span id="val-tint" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-tint" min="-100" max="100" step="1" value="0" class="gradient-tint">
+              </div>
+
+              <div class="divider-horizontal"></div>
+
+              <!-- Exposure EV -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Exposure (EV)</span>
+                  <span id="val-exposure" class="slider-val">0.00</span>
+                </div>
+                <input type="range" id="slider-exposure" min="-5.0" max="5.0" step="0.05" value="0">
+              </div>
+
+              <!-- Contrast -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Contrast</span>
+                  <span id="val-contrast" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-contrast" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <!-- Highlights -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Highlights</span>
+                  <span id="val-highlights" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-highlights" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <!-- Shadows -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Shadows</span>
+                  <span id="val-shadows" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-shadows" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <!-- Whites -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Whites</span>
+                  <span id="val-whites" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-whites" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <!-- Blacks -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Blacks</span>
+                  <span id="val-blacks" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-blacks" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <div class="divider-horizontal"></div>
+
+              <!-- Vibrance -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Vibrance</span>
+                  <span id="val-vibrance" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-vibrance" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <!-- Saturation -->
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Saturation</span>
+                  <span id="val-saturation" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-saturation" min="-100" max="100" step="1" value="0">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Panel 2: Tone Curve -->
+          <div class="accordion-group" data-group="curve">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="trending-up"></i>
+                <span>Tone Curve</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              <div class="curve-channel-selector">
+                <button class="curve-chan-btn active" data-chan="rgb">RGB</button>
+                <button class="curve-chan-btn red" data-chan="r">Red</button>
+                <button class="curve-chan-btn green" data-chan="g">Green</button>
+                <button class="curve-chan-btn blue" data-chan="b">Blue</button>
+              </div>
+              
+              <div class="curve-canvas-wrapper">
+                <svg id="curve-svg" viewBox="0 0 200 200">
+                  <defs>
+                    <linearGradient id="curve-grid" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05"/>
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.01"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="0" y="0" width="200" height="200" fill="url(#curve-grid)" />
+                  <line x1="0" y1="200" x2="200" y2="0" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4" />
+                  <line x1="50" y1="0" x2="50" y2="200" stroke="rgba(255,255,255,0.05)" />
+                  <line x1="100" y1="0" x2="100" y2="200" stroke="rgba(255,255,255,0.05)" />
+                  <line x1="150" y1="0" x2="150" y2="200" stroke="rgba(255,255,255,0.05)" />
+                  <line x1="0" y1="50" x2="200" y2="50" stroke="rgba(255,255,255,0.05)" />
+                  <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(255,255,255,0.05)" />
+                  <line x1="0" y1="150" x2="200" y2="150" stroke="rgba(255,255,255,0.05)" />
+                  <path id="curve-path" d="M 0 200 L 200 0" stroke="#00e5ff" stroke-width="2.5" fill="none"/>
+                  <g id="curve-handles-group"></g>
+                </svg>
+              </div>
+
+              <div class="curve-footer">
+                <button id="btn-reset-curve" class="btn-sm btn-ghost"><i data-lucide="rotate-ccw"></i> Reset Curve</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 3: HSL Color Mixer -->
+          <div class="accordion-group" data-group="hsl">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="palette"></i>
+                <span>HSL Color Mixer</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              <div class="hsl-subtabs">
+                <button class="hsl-mode-btn active" data-mode="hue">Hue</button>
+                <button class="hsl-mode-btn" data-mode="sat">Saturation</button>
+                <button class="hsl-mode-btn" data-mode="lum">Luminance</button>
+              </div>
+              <div id="hsl-sliders-container" class="hsl-sliders-list"></div>
+            </div>
+          </div>
+
+          <!-- Panel 4: Color Grading / Split Toning -->
+          <div class="accordion-group" data-group="grading">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="disc"></i>
+                <span>Color Grading & Split Tone</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              <div class="color-wheels-grid">
+                
+                <div class="color-wheel-box">
+                  <div class="wheel-title">Shadows</div>
+                  <div class="wheel-canvas-container">
+                    <canvas id="wheel-shadows" width="100" height="100"></canvas>
+                  </div>
+                  <div class="wheel-readout" id="readout-shadows">0° / 0%</div>
+                </div>
+
+                <div class="color-wheel-box">
+                  <div class="wheel-title">Midtones</div>
+                  <div class="wheel-canvas-container">
+                    <canvas id="wheel-midtones" width="100" height="100"></canvas>
+                  </div>
+                  <div class="wheel-readout" id="readout-midtones">0° / 0%</div>
+                </div>
+
+                <div class="color-wheel-box">
+                  <div class="wheel-title">Highlights</div>
+                  <div class="wheel-canvas-container">
+                    <canvas id="wheel-highlights" width="100" height="100"></canvas>
+                  </div>
+                  <div class="wheel-readout" id="readout-highlights">0° / 0%</div>
+                </div>
+
+              </div>
+
+              <div class="slider-group mt-3">
+                <div class="slider-label-row">
+                  <span>Balance</span>
+                  <span id="val-grading-balance" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-grading-balance" min="-100" max="100" step="1" value="0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 5: Detail & Denoise -->
+          <div class="accordion-group" data-group="detail">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="sparkles"></i>
+                <span>Detail & Denoise</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Clarity (Micro-contrast)</span>
+                  <span id="val-clarity" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-clarity" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Dehaze</span>
+                  <span id="val-dehaze" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-dehaze" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Sharpening</span>
+                  <span id="val-sharpen" class="slider-val">25</span>
+                </div>
+                <input type="range" id="slider-sharpen" min="0" max="100" step="1" value="25">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Luminance Denoise</span>
+                  <span id="val-denoise-lum" class="slider-val">10</span>
+                </div>
+                <input type="range" id="slider-denoise-lum" min="0" max="100" step="1" value="10">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Panel 6: Optics & Vignette -->
+          <div class="accordion-group" data-group="optics">
+            <button class="accordion-header">
+              <div class="accordion-title">
+                <i data-lucide="aperture"></i>
+                <span>Optics & Effects</span>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </button>
+            <div class="accordion-body">
+              
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Vignette Amount</span>
+                  <span id="val-vignette" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-vignette" min="-100" max="100" step="1" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Film Grain</span>
+                  <span id="val-grain" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-grain" min="0" max="100" step="1" value="0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span>Lens Distortion</span>
+                  <span id="val-distortion" class="slider-val">0</span>
+                </div>
+                <input type="range" id="slider-distortion" min="-50" max="50" step="1" value="0">
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Bayer Demosaic Inspection Modal -->
+    <div id="modal-bayer" class="modal-overlay hidden">
+      <div class="modal-box modal-lg">
+        <div class="modal-header">
+          <h3><i data-lucide="grid-3x3"></i> Bayer Sensor RAW Demosaicing Visualizer</h3>
+          <button class="modal-close" data-modal="modal-bayer">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">RAW image sensors use a Color Filter Array (CFA) such as the Bayer RGGB pattern. Below is the un-demosaiced raw matrix (top) compared with the float-reconstructed demosaiced color result (bottom).</p>
+          <div class="bayer-comparison-box">
+            <div class="bayer-view-col">
+              <div class="bayer-title">1. Raw Bayer Filter Array (RGGB 2x2 Cell)</div>
+              <canvas id="bayer-grid-preview" width="300" height="200"></canvas>
+            </div>
+            <div class="bayer-view-col">
+              <div class="bayer-title">2. Interpolated 16-Bit RGB Reconstructed Pixel</div>
+              <canvas id="bayer-result-preview" width="300" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary modal-close" data-modal="modal-bayer">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="modal-export" class="modal-overlay hidden">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3><i data-lucide="download"></i> Export Processed RAW</h3>
+          <button class="modal-close" data-modal="modal-export">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="control-row">
+            <label>Export Format</label>
+            <select id="export-format" class="select-input">
+              <option value="jpeg">JPEG (.jpg)</option>
+              <option value="png">PNG 16-bit (.png)</option>
+              <option value="webp">WebP (.webp)</option>
+            </select>
+          </div>
+
+          <div class="slider-group" id="quality-slider-group">
+            <div class="slider-label-row">
+              <span>JPEG Quality</span>
+              <span id="val-export-quality" class="slider-val">95%</span>
+            </div>
+            <input type="range" id="export-quality" min="10" max="100" step="1" value="95">
+          </div>
+
+          <div class="control-row">
+            <label>Color Profile</label>
+            <select id="export-profile" class="select-input">
+              <option value="srgb">sRGB IEC61966-2.1 (Standard Web)</option>
+              <option value="adobergb">Adobe RGB (1998) Wide Gamut</option>
+              <option value="prophoto">ProPhoto RGB</option>
+            </select>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="export-exif" checked>
+            <label for="export-exif">Embed Original Camera EXIF Metadata</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary modal-close" data-modal="modal-export">Cancel</button>
+          <button id="btn-do-export" class="btn btn-primary"><i data-lucide="download"></i> Render & Save</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
